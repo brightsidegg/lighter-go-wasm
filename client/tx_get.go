@@ -113,6 +113,18 @@ func (c *TxClient) GetCancelOrderTransaction(tx *types.CancelOrderTxReq, ops *ty
 	return txInfo, nil
 }
 
+func (c *TxClient) GetCreateGroupedOrdersTransaction(tx *types.CreateGroupedOrdersTxReq, ops *types.TransactOpts) (*txtypes.L2CreateGroupedOrdersTxInfo, error) {
+	ops, err := c.FullFillDefaultOps(ops)
+	if err != nil {
+		return nil, err
+	}
+	txInfo, err := types.ConstructL2CreateGroupedOrdersTx(c.keyManager, c.chainId, tx, ops)
+	if err != nil {
+		return nil, err
+	}
+	return txInfo, nil
+}
+
 func (c *TxClient) GetModifyOrderTransaction(tx *types.ModifyOrderTxReq, ops *types.TransactOpts) (*txtypes.L2ModifyOrderTxInfo, error) {
 	ops, err := c.FullFillDefaultOps(ops)
 	if err != nil {

@@ -6,6 +6,11 @@ build-linux-local:
     go mod vendor
     go build -buildmode=c-shared -trimpath -o ./build/signer-amd64.so ./sharedlib/sharedlib.go
 
+build-wasm:
+    go mod vendor
+    GOOS=js GOARCH=wasm go build -o build/sharedlib.wasm ./sharedlib/sharedlib_wasm.go
+
+
 build-linux-docker:
     go mod vendor
     docker run --platform linux/amd64 -v $(pwd):/go/src/sdk golang:1.23.2-bullseye /bin/sh -c "cd /go/src/sdk && go build -buildmode=c-shared -trimpath -o ./build/signer-amd64.so ./sharedlib/sharedlib.go"
