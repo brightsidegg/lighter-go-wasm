@@ -1,0 +1,570 @@
+{
+  "sdkName": "Lighter Trading SDK",
+  "version": "1.0.0",
+  "platform": "iOS (React Native/Expo)",
+  "minimumIOSVersion": "13.0",
+  "framework": "Lighter.xcframework",
+  
+  "setup": {
+    "installation": [
+      "1. Copy Lighter.xcframework to your iOS project folder",
+      "2. In Xcode, drag Lighter.xcframework to your project",
+      "3. Target → General → Frameworks, Libraries, and Embedded Content",
+      "4. Set to 'Embed & Sign'",
+      "5. Import the module in your Swift/Objective-C bridge"
+    ],
+    "expoSetup": [
+      "1. Copy expo-lighter-module folder to your Expo project root",
+      "2. Add to package.json: \"expo-lighter-module\": \"file:./expo-lighter-module\"",
+      "3. Run: npm install",
+      "4. Add to app.json plugins: \"expo-lighter-module\"",
+      "5. Run: npx expo prebuild",
+      "6. Run: npx expo run:ios"
+    ]
+  },
+
+  "typescript": {
+    "types": {
+      "APIKeyResult": {
+        "privateKey": "string",
+        "publicKey": "string", 
+        "error": "string (empty on success)"
+      },
+      "TxResult": {
+        "json": "string (transaction JSON)",
+        "error": "string (empty on success)"
+      }
+    },
+    "import": "import { LighterSDK } from 'expo-lighter-module';"
+  },
+
+  "api": {
+    "keyManagement": [
+      {
+        "function": "generateAPIKey",
+        "description": "Generate a new API key pair for trading",
+        "typescript": "LighterSDK.generateAPIKey(seed: string): APIKeyResult",
+        "parameters": {
+          "seed": {
+            "type": "string",
+            "required": true,
+            "description": "Seed for deterministic generation. Use empty string '' for random key"
+          }
+        },
+        "returns": {
+          "privateKey": "Hex-encoded private key (with 0x prefix)",
+          "publicKey": "Hex-encoded public key (with 0x prefix)",
+          "error": "Empty string on success, error message on failure"
+        },
+        "example": {
+          "code": "const keys = LighterSDK.generateAPIKey('');",
+          "response": {
+            "privateKey": "0x1234567890abcdef...",
+            "publicKey": "0xabcdef1234567890...",
+            "error": ""
+          }
+        }
+      },
+      {
+        "function": "createClient",
+        "description": "Initialize a trading client with your API key",
+        "typescript": "LighterSDK.createClient(url: string, privateKey: string, chainId: number, apiKeyIndex: number, accountIndex: number): string",
+        "parameters": {
+          "url": {
+            "type": "string",
+            "required": true,
+            "description": "Lighter API endpoint URL",
+            "example": "https://api.lighter.xyz"
+          },
+          "privateKey": {
+            "type": "string",
+            "required": true,
+            "description": "Hex-encoded private key from generateAPIKey",
+            "example": "0x1234..."
+          },
+          "chainId": {
+            "type": "number",
+            "required": true,
+            "description": "Blockchain chain ID",
+            "example": 42
+          },
+          "apiKeyIndex": {
+            "type": "number",
+            "required": true,
+            "description": "API key index (0-255)",
+            "example": 0
+          },
+          "accountIndex": {
+            "type": "number",
+            "required": true,
+            "description": "Your account index (must be > 0)",
+            "example": 123
+          }
+        },
+        "returns": "Empty string on success, error message on failure",
+        "example": {
+          "code": "const error = LighterSDK.createClient('https://api.lighter.xyz', privateKey, 42, 0, 123);",
+          "response": ""
+        }
+      },
+      {
+        "function": "checkClient",
+        "description": "Verify client configuration matches server",
+        "typescript": "LighterSDK.checkClient(apiKeyIndex: number, accountIndex: number): string",
+        "parameters": {
+          "apiKeyIndex": {
+            "type": "number",
+            "required": true,
+            "description": "API key index to verify"
+          },
+          "accountIndex": {
+            "type": "number",
+            "required": true,
+            "description": "Account index to verify"
+          }
+        },
+        "returns": "Empty string on success, error message on failure",
+        "example": {
+          "code": "const error = LighterSDK.checkClient(0, 123);",
+          "response": ""
+        }
+      },
+      {
+        "function": "switchAPIKey",
+        "description": "Switch between multiple registered API keys",
+        "typescript": "LighterSDK.switchAPIKey(apiKeyIndex: number): string",
+        "parameters": {
+          "apiKeyIndex": {
+            "type": "number",
+            "required": true,
+            "description": "Index of the API key to switch to"
+          }
+        },
+        "returns": "Empty string on success, error message on failure",
+        "example": {
+          "code": "const error = LighterSDK.switchAPIKey(1);",
+          "response": ""
+        }
+      }
+    ],
+    
+    "trading": [
+      {
+        "function": "signCreateOrder",
+        "description": "Create and sign a new order",
+        "typescript": "LighterSDK.signCreateOrder(params: CreateOrderParams): TxResult",
+        "parameters": {
+          "marketIndex": {
+            "type": "number",
+            "required": true,
+            "description": "Market identifier (0 = BTC-USDC, 1 = ETH-USDC, etc.)"
+          },
+          "clientOrderIndex": {
+            "type": "number",
+            "required": true,
+            "description": "Unique order ID from client side. Use Date.now() or UUID"
+          },
+          "baseAmount": {
+            "type": "number",
+            "required": true,
+            "description": "Order size in base asset units (check decimals for each market)"
+          },
+          "price": {
+            "type": "number",
+            "required": true,
+            "description": "Order price (check decimals for each market)"
+          },
+          "isAsk": {
+            "type": "number",
+            "required": true,
+            "description": "0 = Buy/Bid, 1 = Sell/Ask"
+          },
+          "orderType": {
+            "type": "number",
+            "required": true,
+            "description": "0 = Limit, 1 = Market, 2 = PostOnly, 3 = FillOrKill, 4 = ImmediateOrCancel"
+          },
+          "timeInForce": {
+            "type": "number",
+            "required": true,
+            "description": "0 = GoodTillCancelled, 1 = ImmediateOrCancel, 2 = FillOrKill, 3 = PostOnly"
+          },
+          "reduceOnly": {
+            "type": "number",
+            "required": true,
+            "description": "0 = False, 1 = True (only reduce position, don't increase)"
+          },
+          "triggerPrice": {
+            "type": "number",
+            "required": true,
+            "description": "Trigger price for stop orders. 0 for regular orders"
+          },
+          "orderExpiry": {
+            "type": "number",
+            "required": false,
+            "default": -1,
+            "description": "Unix timestamp in milliseconds. -1 for default (28 days)"
+          },
+          "nonce": {
+            "type": "number",
+            "required": false,
+            "default": -1,
+            "description": "Transaction nonce. -1 for automatic"
+          }
+        },
+        "returns": {
+          "json": "Signed transaction JSON string (send this to Lighter API)",
+          "error": "Empty on success, error message on failure"
+        },
+        "example": {
+          "code": "const result = LighterSDK.signCreateOrder({\n  marketIndex: 0,\n  clientOrderIndex: Date.now(),\n  baseAmount: 100000000, // 1 BTC (8 decimals)\n  price: 5000000, // $50,000\n  isAsk: 0, // Buy\n  orderType: 0, // Limit\n  timeInForce: 0, // GTC\n  reduceOnly: 0,\n  triggerPrice: 0,\n  orderExpiry: -1,\n  nonce: -1\n});",
+          "response": {
+            "json": "{\"order_index\":123,\"signature\":\"0x...\",\"account_index\":456,...}",
+            "error": ""
+          }
+        }
+      },
+      {
+        "function": "signCancelOrder",
+        "description": "Cancel an existing order",
+        "typescript": "LighterSDK.signCancelOrder(marketIndex: number, orderIndex: number, nonce?: number): TxResult",
+        "parameters": {
+          "marketIndex": {
+            "type": "number",
+            "required": true,
+            "description": "Market identifier"
+          },
+          "orderIndex": {
+            "type": "number",
+            "required": true,
+            "description": "Order ID to cancel (from order response or query)"
+          },
+          "nonce": {
+            "type": "number",
+            "required": false,
+            "default": -1,
+            "description": "-1 for automatic"
+          }
+        },
+        "returns": {
+          "json": "Signed transaction JSON",
+          "error": "Empty on success"
+        },
+        "example": {
+          "code": "const result = LighterSDK.signCancelOrder(0, 12345, -1);",
+          "response": {
+            "json": "{\"cancel_order\":...}",
+            "error": ""
+          }
+        }
+      },
+      {
+        "function": "signCancelAllOrders",
+        "description": "Cancel all open orders",
+        "typescript": "LighterSDK.signCancelAllOrders(timeInForce: number, time: number, nonce?: number): TxResult",
+        "parameters": {
+          "timeInForce": {
+            "type": "number",
+            "required": true,
+            "description": "Time in force filter"
+          },
+          "time": {
+            "type": "number",
+            "required": true,
+            "description": "Unix timestamp"
+          },
+          "nonce": {
+            "type": "number",
+            "required": false,
+            "default": -1
+          }
+        },
+        "returns": {
+          "json": "Signed transaction JSON",
+          "error": "Empty on success"
+        },
+        "example": {
+          "code": "const result = LighterSDK.signCancelAllOrders(0, Date.now(), -1);",
+          "response": {
+            "json": "{\"cancel_all\":...}",
+            "error": ""
+          }
+        }
+      },
+      {
+        "function": "signModifyOrder",
+        "description": "Modify an existing order",
+        "typescript": "LighterSDK.signModifyOrder(params: ModifyOrderParams): TxResult",
+        "parameters": {
+          "marketIndex": {
+            "type": "number",
+            "required": true
+          },
+          "index": {
+            "type": "number",
+            "required": true,
+            "description": "Order index to modify"
+          },
+          "baseAmount": {
+            "type": "number",
+            "required": true,
+            "description": "New order size"
+          },
+          "price": {
+            "type": "number",
+            "required": true,
+            "description": "New price"
+          },
+          "triggerPrice": {
+            "type": "number",
+            "required": true,
+            "description": "New trigger price"
+          },
+          "nonce": {
+            "type": "number",
+            "required": false,
+            "default": -1
+          }
+        },
+        "returns": {
+          "json": "Signed transaction JSON",
+          "error": "Empty on success"
+        },
+        "example": {
+          "code": "const result = LighterSDK.signModifyOrder({\n  marketIndex: 0,\n  index: 12345,\n  baseAmount: 200000000,\n  price: 5100000,\n  triggerPrice: 0,\n  nonce: -1\n});",
+          "response": {
+            "json": "{\"modify_order\":...}",
+            "error": ""
+          }
+        }
+      }
+    ],
+
+    "accountManagement": [
+      {
+        "function": "signWithdraw",
+        "description": "Withdraw USDC from your account",
+        "typescript": "LighterSDK.signWithdraw(usdcAmount: number, nonce?: number): TxResult",
+        "parameters": {
+          "usdcAmount": {
+            "type": "number",
+            "required": true,
+            "description": "Amount in USDC base units (6 decimals). Example: 1000000 = $1"
+          },
+          "nonce": {
+            "type": "number",
+            "required": false,
+            "default": -1
+          }
+        },
+        "returns": {
+          "json": "Signed transaction JSON",
+          "error": "Empty on success"
+        },
+        "example": {
+          "code": "const result = LighterSDK.signWithdraw(1000000, -1); // Withdraw $1",
+          "response": {
+            "json": "{\"withdraw\":...}",
+            "error": ""
+          }
+        }
+      },
+      {
+        "function": "signTransfer",
+        "description": "Transfer USDC to another account",
+        "typescript": "LighterSDK.signTransfer(params: TransferParams): TxResult",
+        "parameters": {
+          "toAccountIndex": {
+            "type": "number",
+            "required": true,
+            "description": "Recipient's account index"
+          },
+          "usdcAmount": {
+            "type": "number",
+            "required": true,
+            "description": "Amount in USDC base units"
+          },
+          "fee": {
+            "type": "number",
+            "required": true,
+            "description": "Transfer fee"
+          },
+          "memo": {
+            "type": "string",
+            "required": true,
+            "description": "MUST be exactly 32 bytes. Pad with spaces if needed"
+          },
+          "nonce": {
+            "type": "number",
+            "required": false,
+            "default": -1
+          }
+        },
+        "returns": {
+          "json": "Signed transaction JSON with MessageToSign field",
+          "error": "Empty on success"
+        },
+        "example": {
+          "code": "const memo = 'Payment for services'.padEnd(32, ' ');\nconst result = LighterSDK.signTransfer({\n  toAccountIndex: 456,\n  usdcAmount: 500000,\n  fee: 100,\n  memo: memo,\n  nonce: -1\n});",
+          "response": {
+            "json": "{\"transfer\":...,\"MessageToSign\":\"...\"}",
+            "error": ""
+          }
+        }
+      },
+      {
+        "function": "signCreateSubAccount",
+        "description": "Create a new sub-account",
+        "typescript": "LighterSDK.signCreateSubAccount(nonce?: number): TxResult",
+        "parameters": {
+          "nonce": {
+            "type": "number",
+            "required": false,
+            "default": -1
+          }
+        },
+        "returns": {
+          "json": "Signed transaction JSON",
+          "error": "Empty on success"
+        },
+        "example": {
+          "code": "const result = LighterSDK.signCreateSubAccount(-1);",
+          "response": {
+            "json": "{\"create_sub_account\":...}",
+            "error": ""
+          }
+        }
+      },
+      {
+        "function": "signChangePubKey",
+        "description": "Change your account's public key",
+        "typescript": "LighterSDK.signChangePubKey(pubKey: string, nonce?: number): TxResult",
+        "parameters": {
+          "pubKey": {
+            "type": "string",
+            "required": true,
+            "description": "Hex-encoded public key (40 bytes, with or without 0x prefix)"
+          },
+          "nonce": {
+            "type": "number",
+            "required": false,
+            "default": -1
+          }
+        },
+        "returns": {
+          "json": "Signed transaction JSON with MessageToSign field",
+          "error": "Empty on success"
+        },
+        "example": {
+          "code": "const result = LighterSDK.signChangePubKey('0xabcd...', -1);",
+          "response": {
+            "json": "{\"change_pub_key\":...,\"MessageToSign\":\"...\"}",
+            "error": ""
+          }
+        }
+      }
+    ],
+
+    "authentication": [
+      {
+        "function": "createAuthToken",
+        "description": "Create JWT authentication token for API requests",
+        "typescript": "LighterSDK.createAuthToken(deadline?: number): TxResult",
+        "parameters": {
+          "deadline": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "Unix timestamp (seconds). 0 for default (7 hours from now)"
+          }
+        },
+        "returns": {
+          "json": "JWT token string (use in Authorization header)",
+          "error": "Empty on success"
+        },
+        "example": {
+          "code": "const result = LighterSDK.createAuthToken(0);\nif (result.error === '') {\n  const token = result.json;\n  // Use: Authorization: Bearer ${token}\n}",
+          "response": {
+            "json": "eyJhbGciOiJIUzI1NiIs...",
+            "error": ""
+          }
+        }
+      }
+    ]
+  },
+
+  "errorHandling": {
+    "pattern": "All functions return error in result object or string",
+    "checkPattern": {
+      "forStrings": "if (error === '') { /* success */ }",
+      "forObjects": "if (result.error === '') { /* success */ }"
+    },
+    "commonErrors": {
+      "CLIENT_NOT_CREATED": "Call createClient() before other operations",
+      "INVALID_ACCOUNT_INDEX": "Account index must be > 0",
+      "INVALID_PUBKEY_LENGTH": "Public key must be 40 bytes",
+      "MEMO_LENGTH_ERROR": "Memo must be exactly 32 bytes",
+      "API_KEY_NOT_REGISTERED": "API key not found. Call createClient() first",
+      "API_KEY_MISMATCH": "Private key doesn't match the one registered on Lighter"
+    }
+  },
+
+  "completeExample": {
+    "description": "Full trading flow example",
+    "code": "import { LighterSDK } from 'expo-lighter-module';\n\n// 1. Generate keys\nconst keys = LighterSDK.generateAPIKey('');\nif (keys.error !== '') {\n  console.error('Key generation failed:', keys.error);\n  return;\n}\n\n// 2. Create client\nconst clientError = LighterSDK.createClient(\n  'https://api.lighter.xyz',\n  keys.privateKey,\n  42,\n  0,\n  123\n);\n\nif (clientError !== '') {\n  console.error('Client creation failed:', clientError);\n  return;\n}\n\n// 3. Create auth token\nconst authResult = LighterSDK.createAuthToken(0);\nif (authResult.error !== '') {\n  console.error('Auth failed:', authResult.error);\n  return;\n}\nconst authToken = authResult.json;\n\n// 4. Place an order\nconst orderResult = LighterSDK.signCreateOrder({\n  marketIndex: 0,\n  clientOrderIndex: Date.now(),\n  baseAmount: 100000000,\n  price: 5000000,\n  isAsk: 0,\n  orderType: 0,\n  timeInForce: 0,\n  reduceOnly: 0,\n  triggerPrice: 0,\n  orderExpiry: -1,\n  nonce: -1\n});\n\nif (orderResult.error !== '') {\n  console.error('Order signing failed:', orderResult.error);\n  return;\n}\n\n// 5. Send to Lighter API\nconst response = await fetch('https://api.lighter.xyz/transactions', {\n  method: 'POST',\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': `Bearer ${authToken}`\n  },\n  body: orderResult.json\n});\n\nif (response.ok) {\n  console.log('✅ Order placed successfully!');\n  const data = await response.json();\n  console.log('Order ID:', data.order_id);\n} else {\n  console.error('❌ API error:', await response.text());\n}"
+  },
+
+  "bestPractices": {
+    "security": [
+      "Never hardcode private keys",
+      "Store keys in secure storage (expo-secure-store)",
+      "Use environment variables for API URLs",
+      "Implement biometric authentication before signing",
+      "Validate all user inputs",
+      "Use HTTPS only"
+    ],
+    "errorHandling": [
+      "Always check error field before using results",
+      "Implement retry logic for network failures",
+      "Show user-friendly error messages",
+      "Log errors for debugging"
+    ],
+    "performance": [
+      "Create client once, reuse for multiple operations",
+      "Cache auth tokens (they're valid for hours)",
+      "Use -1 for automatic nonce management",
+      "Batch operations when possible"
+    ]
+  },
+
+  "constants": {
+    "orderSide": {
+      "BUY": 0,
+      "SELL": 1
+    },
+    "orderType": {
+      "LIMIT": 0,
+      "MARKET": 1,
+      "POST_ONLY": 2,
+      "FILL_OR_KILL": 3,
+      "IMMEDIATE_OR_CANCEL": 4
+    },
+    "timeInForce": {
+      "GOOD_TILL_CANCELLED": 0,
+      "IMMEDIATE_OR_CANCEL": 1,
+      "FILL_OR_KILL": 2,
+      "POST_ONLY": 3
+    },
+    "marginDirection": {
+      "ADD": 0,
+      "REMOVE": 1
+    }
+  },
+
+  "testing": {
+    "testnetURL": "https://api-testnet.lighter.xyz",
+    "mainnetURL": "https://api.lighter.xyz",
+    "testAccount": "Use your own test account from Lighter dashboard"
+  }
+}
+

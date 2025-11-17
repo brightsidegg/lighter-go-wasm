@@ -1,0 +1,8 @@
+framework module "Lighter" {
+	header "ref.h"
+    header "Mobile.objc.h"
+    header "Universe.objc.h"
+    header "Lighter.h"
+
+    export *
+}
